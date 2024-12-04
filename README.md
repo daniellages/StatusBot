@@ -1,6 +1,6 @@
-# StatusBot
+# Statify
 
-**StatusBot** is a Discord bot that has management functions to display stats and curiosities.
+**Statify** is a Discord bot that has management functions to display stats and curiosities.
 
 ## Setup
 
@@ -72,6 +72,9 @@ date,user_id,channel_id,count
 03/12/2024,236169317706629130,747480205299286087,1
 03/12/2024,236169317706629130,864440262939115531,1
 ```
+
+## Logging System
+The Statify bot includes a comprehensive logging system to track events, errors and general activity
 
 ## Notes
 - **CSV File is temporary:** a database will be used in the future
