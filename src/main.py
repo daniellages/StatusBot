@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 import discord
-import database as db
+import commands as cmd
 
 # Load token
 load_dotenv()
@@ -10,6 +10,9 @@ TOKEN = os.getenv('TOKEN')
 # Intents
 intents = discord.Intents.default()
 intents.message_content = True
+intents.guilds = True
+intents.members = True
+intents.messages = True
 
 # Init Bot
 client = discord.Client(intents=intents)
@@ -26,21 +29,16 @@ async def on_message(message):
         return
     
     if message.content.startswith('record this message'):
-        date_str = message.created_at.strftime('%d/%m/%Y')
-        db.upsertMessageCount(date_str, message.author.id, message.channel.id)
-        await message.channel.send('Done!')
+        await cmd.recordMessage(message)
     
     elif message.content.startswith('get messages'):
-        # Get messages during a specific date range
-        messages = db.getMessagesDuring('03/12/2024', '04/12/2024')
-        
-        # Send the messages to the Discord channel
-        if messages:
-            response = "\n".join([f"{msg['date']} | {msg['user_id']} | {msg['channel_id']} | {msg['count']}" for msg in messages])
-        else:
-            response = "No messages found in this date range."
-        
-        await message.channel.send(response)
+        await cmd.getMessages(message)
 
+    elif message.content.startswith('load messages'):
+        await cmd.loadMessages(message)
+
+    elif message.content.startswith('get stats'):
+        await cmd.stats(message)
 # Start bot
-client.run(TOKEN)
+if __name__ == "__main__":
+    client.run(TOKEN)
