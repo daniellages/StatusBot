@@ -55,6 +55,9 @@ Loads every messages from the past 2 months to the messages table, this may take
 ### - `get stats`
 Get current month stats compared with the previous month
 
+### - `help`
+Get link to this repository, inception
+
 ## Structure of database tables
 - `messages`
     - `date`: The date the message was sent, `dd/mm/YYYY` format.
