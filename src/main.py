@@ -39,6 +39,10 @@ async def on_message(message):
 
     elif message.content.startswith('get stats'):
         await cmd.stats(message)
+
+    elif message.content.startswith('help'):
+        await message.channel.send("You can visit commands here: https://github.com/daniellages/StatusBot")
+
 # Start bot
 if __name__ == "__main__":
     client.run(TOKEN)
