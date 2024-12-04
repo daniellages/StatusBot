@@ -2,31 +2,39 @@ from datetime import datetime, timedelta
 import discord
 import database as db
 from stats import getMonthStats
+from logger import logger
 
 async def recordMessage(message):
     date_str = message.created_at.strftime('%d/%m/%Y')
-    db.upsertMessageCount(date_str, message.author.id, message.channel.id)
-    await message.channel.send('Done!')
+    try:
+        db.upsertMessageCount(date_str, message.author.id, message.channel.id)
+        logger.info(f"Recorded message from user {message.author.name} in channel {message.channel.name}")
+        await message.channel.send('Message recorded!')
+    except Exception as e:
+        logger.error(f"Error recording message: {e}")
+        await message.channel.send("Failed to record the message.")
 
 async def getMessages(message):
     # Example date range
     start_date = '03/11/2024'
     end_date = '04/12/2024'
 
-    messages = db.getMessagesDuring(start_date, end_date)
+    try:
+        messages = db.getMessagesDuring(start_date, end_date)
 
-    count = len(messages)
-    response = f"Number of entries from {start_date} to {end_date}: {count}"
-    #if messages:
-    #    response = "\n".join([f"{msg['date']} | {msg['user_id']} | {msg['channel_id']} | {msg['count']}" for msg in messages])
-    #else:
-    #    response = "No messages found in this date range."
+        count = len(messages)
+        response = f"Number of entries from {start_date} to {end_date}: {count}"
         
-    await message.channel.send(response)
+        logger.info(f"Retrieved {count} messages from {start_date} to {end_date}")
+        await message.channel.send(response)
+    except Exception as e:
+        logger.error(f"Error fetching messages: {e}")
+        await message.channel.send("Failed to fetch messages.")
 
 async def loadMessages(message):
     two_months_ago = datetime.now() - timedelta(days=60)
     loaded_messages = set()
+    logger.info(f"Starting to load messages from the last two months: {message.guild.name}")
 
     # Appear as typing
     async with message.channel.typing():
@@ -40,14 +48,26 @@ async def loadMessages(message):
                         date_str = msg.created_at.strftime('%d/%m/%Y')
                         db.upsertMessageCount(date_str, msg.author.id, channel.id)
                         loaded_messages.add(unique_key)
+                logger.info(f"Messages loaded successfully from channel: {channel.name}")
             except Exception as e:
-                print(f"Error in channel {channel.name}: {e}")
-    
+                logger.error(f"Error loading messages from channel {channel.name}: {e}")
+                await message.channel.send("Failed to load messages from past two months.")
+                return
+
+    logger.info(f"Completed loading messages from server: {message.guild.name}")
     await message.channel.send('Messages from the last two months have been loaded!')
 
 async def stats(message):
+    logger.info(f"Fetching stats for server: {message.guild.name}")
+
     async with message.channel.typing():
-        stats = getMonthStats()
+        try:
+            stats = getMonthStats()
+            logger.debug("Successufully retrieved stats")
+        except Exception as e:
+            logger.error(f"Error retrieving stats: {e}")
+            await message.channel.send("Failed to retrieve stats.")
+            return
 
     # Round growth
     growth = round(stats['growth'])
@@ -72,4 +92,8 @@ async def stats(message):
         f"**Top Channel Last Month:** {top_channel_previous} with {stats['channel_previous_count']} messages"
     )
 
+    logger.info("Stats successfully sent.")
     await message.channel.send(response)
+
+async def help(message):
+    await message.channel.send("You can visit commands here: https://github.com/daniellages/StatusBot")
