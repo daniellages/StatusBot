@@ -41,6 +41,20 @@ cd src
 python main.py
 ```
 
+## Commands
+
+### - `record this message`
+It forcefully load the message to the messages table
+
+### - `get messages`
+Loads every messsage and displays only the total count
+
+### - `load messages`
+Loads every messages from the past 2 months to the messages table, this may take a while
+
+### - `get stats`
+Get current month stats compared with the previous month
+
 ## Structure of database tables
 - `messages`
     - `date`: The date the message was sent, `dd/mm/YYYY` format.
@@ -55,19 +69,6 @@ date,user_id,channel_id,count
 03/12/2024,236169317706629130,747480205299286087,1
 03/12/2024,236169317706629130,864440262939115531,1
 ```
-
-## Functions
-
-### 1. `upsertMessageCount(date, user_id, channel_id)`
-
-This function updates or inserts the message count for a specific `date`, `user_id` and `channel_id`
-- If an entry already exists: Increment the counter
-- If no entry exists: Create a new entry with counter starting at 1
-
-### 2. `getMessagesDuring(start_date, end_date)`
-
-This function retrieves all messages that were recorded durint the specified date range
-- Returns: A list of dictionaries containing the message data withing the specified date range
 
 ## Notes
 - **CSV File is temporary:** a database will be used in the future
