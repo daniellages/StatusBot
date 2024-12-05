@@ -5,7 +5,8 @@ from logging.handlers import RotatingFileHandler
 file_handler = RotatingFileHandler(
     "../client.log",                    # Log file path
     maxBytes=5*1024*1024,               # Max size in bytes (5MB)
-    backupCount=3                       # Keep max 3 backup files
+    backupCount=3,                      # Keep max 3 backup files
+    encoding='utf-8'
 )
 
 logging.basicConfig(

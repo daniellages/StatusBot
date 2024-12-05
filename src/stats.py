@@ -20,50 +20,65 @@ def getMonthStats():
     # Get messages from both months
     current_month_messages = db.getMessagesDuring(current_start_str, current_end_str)
     previous_month_messages = db.getMessagesDuring(previous_start_str, previous_end_str)
+    current_month_voices = db.getVoicesDuring(current_start_str, current_end_str)
+    previous_month_voices = db.getVoicesDuring(previous_start_str, previous_end_str)
 
     # Count messages
-    current_total = int(len(current_month_messages))
-    previous_total = int(len(previous_month_messages))
+    current_messages_total = int(len(current_month_messages))
+    previous_messages_total = int(len(previous_month_messages))
 
     # Percentage
-    if previous_total == 0:
-        growth = "infinite" if current_total > 0 else "0"
+    if previous_messages_total == 0:
+        growth = "infinite" if current_messages_total > 0 else "0"
     else:
-        growth = round(((current_total - previous_total) / previous_total) * 100, 2)
+        growth = round(((current_messages_total - previous_messages_total) / previous_messages_total) * 100, 2)
     
-    def getTopStats(messages):
-        user_stats = {}
-        channel_stats = {}
+    # Helper function
+    def calculateTopStats(data, key, duration=False, top_n = 5):
+        stats = {}
 
-        for msg in messages:
-            user_id = msg['user_id']
-            channel_id = msg['channel_id']
-            count = int(msg['count'])
-
-            user_stats[user_id] = user_stats.get(user_id, 0) + count
-            channel_stats[channel_id] = channel_stats.get(channel_id, 0) + count
+        for entry in data:
+            identifier = entry[key]
+            # Calculate voice duration
+            if duration:
+                joined_at = datetime.strptime(entry['joined_at'], '%Y-%m-%d %H:%M:%S')
+                left_at = datetime.strptime(entry['left_at'], '%Y-%m-%d %H:%M:%S') if entry['left_at'] else today
+                time_spent = (left_at - joined_at).total_seconds()
+                stats[identifier] = stats.get(identifier, 0) + time_spent
+            # Count occorrences for messages
+            else:
+                stats[identifier] = stats.get(identifier, 0) + int(entry['count'])
         
-        top_user = max(user_stats, key=user_stats.get, default=None)
-        top_channel = max(channel_stats, key=channel_stats.get, default=None)
+        # Sort and return the top N items
+        return sorted(stats.items(), key=lambda x: x[1], reverse=True)[:top_n]
 
-        return top_user, user_stats.get(top_user, 0), top_channel, channel_stats.get(top_channel, 0)
+    # Calculate message stats
+    top_messages_users_current = calculateTopStats(current_month_messages, key='user_id')
+    top_messages_channels_current = calculateTopStats(current_month_messages, key='channel_id')
+    top_messages_users_previous = calculateTopStats(previous_month_messages, key='user_id')
+    top_messages_channels_previous = calculateTopStats(previous_month_messages, key='channel_id')
 
-    top_user_current, user_current_count, top_channel_current, channel_current_count = getTopStats(current_month_messages)
-    top_user_previous, user_previous_count, top_channel_previous, channel_previous_count = getTopStats(previous_month_messages)
+    # Calculate voice stats
+    top_voices_users_current = calculateTopStats(current_month_voices, key='user_id', duration=True)
+    top_voices_channels_current = calculateTopStats(current_month_voices, key='channel_id', duration=True)
+    top_voices_users_previous = calculateTopStats(previous_month_voices, key='user_id', duration=True)
+    top_voices_channels_previous = calculateTopStats(previous_month_voices, key='channel_id', duration=True)
 
     # Format stats
     stats = {
-        "current_total": current_total,
-        "previous_total": previous_total,
+        "previous_start_str": previous_start_str,
+        "current_end_str": current_end_str,
+        "current_total": current_messages_total,
+        "previous_total": previous_messages_total,
         "growth": growth,
-        "top_user_current": top_user_current,
-        "user_current_count": user_current_count,
-        "top_channel_current": top_channel_current,
-        "channel_current_count": channel_current_count,
-        "top_user_previous": top_user_previous,
-        "user_previous_count": user_previous_count,
-        "top_channel_previous": top_channel_previous,
-        "channel_previous_count": channel_previous_count,
+        "top_messages_users_current": [{"user_id": user_id, "count": count} for user_id, count in top_messages_users_current],
+        "top_messages_channels_current": [{"channel_id": channel_id, "count": count} for channel_id, count in top_messages_channels_current],
+        "top_messages_users_previous": [{"user_id": user_id, "count": count} for user_id, count in top_messages_users_previous],
+        "top_messages_channels_previous": [{"channel_id": channel_id, "count": count} for channel_id, count in top_messages_channels_previous],
+        "top_voices_users_current": [{"user_id": user_id, "duration": round(duration, 2)} for user_id, duration in top_voices_users_current],
+        "top_voices_channels_current": [{"channel_id": channel_id, "duration": round(duration, 2)} for channel_id, duration in top_voices_channels_current],
+        "top_voices_users_previous": [{"user_id": user_id, "duration": round(duration, 2)} for user_id, duration in top_voices_users_previous],
+        "top_voices_channels_previous": [{"channel_id": channel_id, "duration": round(duration, 2)} for channel_id, duration in top_voices_channels_previous],
     }
 
     return stats
