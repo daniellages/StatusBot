@@ -12,8 +12,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        file_handler                    # Rotating file handler
-        #logging.StreamHandler()        # Log to terminal
+        file_handler,                   # Rotating file handler
+        logging.StreamHandler()         # Log to terminal
     ]
 )
 

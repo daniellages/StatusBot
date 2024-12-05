@@ -12,24 +12,24 @@ def getMonthStats():
     previous_month_start = previous_month_end.replace(day=1)
 
     # Format dates to strings
-    current_start_str = current_month_start.strftime('%d/%m/%Y')
-    current_end_str = current_month_end.strftime('%d/%m/%Y')
-    previous_start_str = previous_month_start.strftime('%d/%m/%Y')
-    previous_end_str = previous_month_end.strftime('%d/%m/%Y')
+    current_start_str = current_month_start.strftime('%Y-%m-%d')
+    current_end_str = current_month_end.strftime('%Y-%m-%d')
+    previous_start_str = previous_month_start.strftime('%Y-%m-%d')
+    previous_end_str = previous_month_end.strftime('%Y-%m-%d')
 
     # Get messages from both months
     current_month_messages = db.getMessagesDuring(current_start_str, current_end_str)
     previous_month_messages = db.getMessagesDuring(previous_start_str, previous_end_str)
 
     # Count messages
-    current_total = len(current_month_messages)
-    previous_total = len(previous_month_messages)
+    current_total = int(len(current_month_messages))
+    previous_total = int(len(previous_month_messages))
 
     # Percentage
     if previous_total == 0:
         growth = "infinite" if current_total > 0 else "0"
     else:
-        growth = ((current_total - previous_total) / previous_total) * 100
+        growth = round(((current_total - previous_total) / previous_total) * 100, 2)
     
     def getTopStats(messages):
         user_stats = {}
@@ -38,9 +38,10 @@ def getMonthStats():
         for msg in messages:
             user_id = msg['user_id']
             channel_id = msg['channel_id']
+            count = int(msg['count'])
 
-            user_stats[user_id] = user_stats.get(user_id, 0) + int(msg['count'])
-            channel_stats[channel_id] = channel_stats.get(channel_id, 0) + int(msg['count'])
+            user_stats[user_id] = user_stats.get(user_id, 0) + count
+            channel_stats[channel_id] = channel_stats.get(channel_id, 0) + count
         
         top_user = max(user_stats, key=user_stats.get, default=None)
         top_channel = max(channel_stats, key=channel_stats.get, default=None)

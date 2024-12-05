@@ -1,35 +1,7 @@
 from datetime import datetime, timedelta
-import discord
 import database as db
 from stats import getMonthStats
 from logger import logger
-
-async def recordMessage(message):
-    date_str = message.created_at.strftime('%d/%m/%Y')
-    try:
-        db.upsertMessageCount(date_str, message.author.id, message.channel.id)
-        logger.info(f"Recorded message from user {message.author.name} in channel {message.channel.name}")
-        await message.channel.send('Message recorded!')
-    except Exception as e:
-        logger.error(f"Error recording message: {e}")
-        await message.channel.send("Failed to record the message.")
-
-async def getMessages(message):
-    # Example date range
-    start_date = '03/11/2024'
-    end_date = '04/12/2024'
-
-    try:
-        messages = db.getMessagesDuring(start_date, end_date)
-
-        count = len(messages)
-        response = f"Number of entries from {start_date} to {end_date}: {count}"
-        
-        logger.info(f"Retrieved {count} messages from {start_date} to {end_date}")
-        await message.channel.send(response)
-    except Exception as e:
-        logger.error(f"Error fetching messages: {e}")
-        await message.channel.send("Failed to fetch messages.")
 
 async def loadMessages(message):
     two_months_ago = datetime.now() - timedelta(days=60)
@@ -45,7 +17,7 @@ async def loadMessages(message):
                     # Use unique key to avoid duplicates
                     unique_key = f"{msg.id}-{msg.channel.id}"
                     if unique_key not in loaded_messages:
-                        date_str = msg.created_at.strftime('%d/%m/%Y')
+                        date_str = msg.created_at.strftime('%Y-%m-%d')
                         db.upsertMessageCount(date_str, msg.author.id, channel.id)
                         loaded_messages.add(unique_key)
                 logger.info(f"Messages loaded successfully from channel: {channel.name}")
@@ -70,7 +42,7 @@ async def stats(message):
             return
 
     # Round growth
-    growth = round(stats['growth'])
+    growth = stats['growth']
 
     # Use mentions
     top_user_current = f"<@{stats['top_user_current']}>" if stats['top_user_current'] else "Unkown"
@@ -97,3 +69,56 @@ async def stats(message):
 
 async def help(message):
     await message.channel.send("You can visit commands here: https://github.com/daniellages/StatusBot")
+
+# Voice
+async def voiceStateUpdate(member, before, after):
+    now = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    user_id = member.id
+
+    # User joins voice channel
+    if before.channel is None and after.channel is not None:
+        channel_id = after.channel.id
+        joined_at = now
+        db.upsertVoiceState(user_id, channel_id, joined_at=joined_at)
+        logger.info(f"User {member} joined voice channel {after.channel.name}.")
+    
+    # User changes voice channel
+    elif before.channel is not None and after.channel is not None:
+        # Update old entry
+        old_channel_id = before.channel.id
+        left_at = now
+        db.upsertVoiceState(user_id, old_channel_id, left_at=left_at)
+        
+        # Insert new entry
+        new_channel_id = after.channel.id
+        joined_at = now
+        db.upsertVoiceState(user_id, new_channel_id, joined_at=joined_at)
+        logger.info(f"User {member} changed voice channel from {before.channel.name} to {after.channel.name}.")
+
+    # User leaves voice channel
+    elif before.channel is not None and after.channel is None:
+        channel_id = before.channel.id
+        left_at = now
+        db.upsertVoiceState(user_id, channel_id, left_at=left_at)
+        logger.info(f"User {member} left voice channel {before.channel.name}.")
+
+# Clear all data from messages table
+async def resetMessagesTable(message):
+    async with message.channel.typing():
+        try:
+            db.resetData('messages')
+            await message.channel.send(f"The 'messages' table has been successfully reset!")
+        except:
+            await message.channel.send(f"An error occurred while resetting the 'messages' table.")
+
+# Clear all data from voices table
+async def resetVoicesTable(message):
+    if message.author.id == 236169317706629130:
+        async with message.channel.typing():
+            try:
+                db.resetData('voices')
+                await message.channel.send(f"The 'voices' table has been successfully reset!")
+            except:
+                await message.channel.send(f"An error occurred while resetting the 'voices' table.")
+    else:
+        await message.channel.send("You don't have permission for that.")

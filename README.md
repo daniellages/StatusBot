@@ -33,6 +33,7 @@ python -m pip install -r requirements.txt
 Create the `.env` file in the root of the project.
 ```makefile
 TOKEN=discord_bot_token_here
+DB_PATH=path_to_databases_folder
 ```
 
 ### 5. Run the Bot
@@ -43,12 +44,6 @@ python main.py
 
 ## Commands
 
-### - `record this message`
-It forcefully load the message to the messages table
-
-### - `get messages`
-Loads every messsage and displays only the total count
-
 ### - `load messages`
 Loads every messages from the past 2 months to the messages table, this may take a while
 
@@ -58,9 +53,17 @@ Get current month stats compared with the previous month
 ### - `help`
 Get link to this repository, inception
 
+## Events
+
+### - User joins channel
+Creates new entry in voices table with empty left_at value
+
+### - User leaves channel
+Updates entry in voices table with the correct left_at value
+
 ## Structure of database tables
 - `messages`
-    - `date`: The date the message was sent, `dd/mm/YYYY` format.
+    - `date`: The date the message was sent, `YYYY-MM-DD` format.
     - `user_id`: The Discord user ID of the author.
     - `channel_id`: The Discord channel ID where the message was sent.
     - `count`: The number of messages sent by `user_id` in a specific `channel_id` and `date`
@@ -73,12 +76,22 @@ date,user_id,channel_id,count
 03/12/2024,236169317706629130,864440262939115531,1
 ```
 
+- `voices`
+    - `user_id`: The Discord user ID of the author.
+    - `channel_id`: The Discord channel ID where the message was sent.
+    - `joined_at`: The datetime that the user joined the voice channel, `YYYY-MM-DD HH:MM:SS` format.
+    - `left_at`: The datetime that the user left the voice channel, `YYYY-MM-DD HH:MM:SS` format.
+
+**Example:**
+```csv
+user_id, channel_id, joined_at, left_at
+```
+
 ## Logging System
 The Statify bot includes a comprehensive logging system to track events, errors and general activity
 
 ## Notes
-- **CSV File is temporary:** a database will be used in the future
-- **Date Format:** should always be converted to `dd/mm/YYYY` for consistency
+- **Date Format:** should always be converted to `YYYY-MM-DD` (ISO 8601)
 
 ## Author
 

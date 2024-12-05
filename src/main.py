@@ -14,6 +14,7 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 intents.messages = True
+intents.voice_states = True
 
 # Init Bot
 client = discord.Client(intents=intents)
@@ -26,10 +27,10 @@ async def on_ready():
 # Command dispatcher
 async def handle_command(message):
     commands = {
-        "record this message": cmd.recordMessage,
-        "get messages": cmd.getMessages,
         "load messages": cmd.loadMessages,
         "get stats": cmd.stats,
+        "reset messages": cmd.resetMessagesTable,
+        "reset voices": cmd.resetVoicesTable,
         "help": cmd.help,
     }
     content = message.content.strip()
@@ -48,6 +49,11 @@ async def on_message(message):
     except Exception as e:
         logger.error(f"Error in command: {e}")
         await message.channel.send("An error has occurred while handling your command.")
+
+# Voice state update
+@client.event
+async def on_voice_state_update(member, before, after):
+    await cmd.voiceStateUpdate(member, before, after)
 
 # Start bot
 if __name__ == "__main__":
